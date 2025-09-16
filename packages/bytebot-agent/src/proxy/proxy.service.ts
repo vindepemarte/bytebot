@@ -425,6 +425,9 @@ export class ProxyService implements BytebotAgentService {
       'glm-4.1v-9b-thinking',
       'ernie-4.5-vl-28b-a3b',
       'claude-3.7-sonnet:thinking',
+      'llama-4-maverick:free',
+      'llama-4-scout:free',
+      'kimi-vl-a3b-thinking:free',
     ];
     return openRouterModels.some(m => model.includes(m));
   }
