@@ -62,13 +62,13 @@ export class ProxyService implements BytebotAgentService {
       messages,
     );
     try {
-      // Prepare the Chat Completion request
+      // Prepare the Chat Completion request with model-specific parameters
       const completionRequest: OpenAI.Chat.ChatCompletionCreateParams = {
         model,
         messages: chatMessages,
         max_tokens: 8192,
         ...(useTools && { tools: proxyTools }),
-        reasoning_effort: 'high',
+        ...this.getModelSpecificParameters(model),
       };
 
       // Make the API call
@@ -100,11 +100,14 @@ export class ProxyService implements BytebotAgentService {
         throw new BytebotAgentInterrupt();
       }
 
+      // Enhanced error handling for different API providers
+      const enhancedError = this.handleApiError(error, model);
+      
       this.logger.error(
-        `Error sending message to proxy: ${error.message}`,
-        error.stack,
+        `Error sending message to proxy: ${enhancedError.message}`,
+        enhancedError.stack,
       );
-      throw error;
+      throw enhancedError;
     }
   }
 
@@ -323,5 +326,147 @@ export class ProxyService implements BytebotAgentService {
     }
 
     return contentBlocks;
+  }
+
+  /**
+   * Get model-specific parameters based on the model name
+   * Different models support different parameters and have different requirements
+   */
+  private getModelSpecificParameters(model: string): Record<string, any> {
+    const parameters: Record<string, any> = {};
+
+    // Models that don't support reasoning_effort parameter
+    const modelsWithoutReasoningEffort = [
+      'gpt-oss-120b',
+      'sonoma-dusk-alpha',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ];
+
+    // OpenRouter models that need specific handling
+    const openRouterModels = [
+      'gpt-oss-120b',
+      'sonoma-dusk-alpha',
+      'sonoma-sky-alpha',
+      'glm-4.1v-9b-thinking',
+      'ernie-4.5-vl-28b-a3b',
+      'claude-3.7-sonnet:thinking',
+    ];
+
+    // Gemini models that need specific handling
+    const geminiModels = [
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ];
+
+    // Add reasoning_effort for models that support it
+    if (!modelsWithoutReasoningEffort.includes(model)) {
+      parameters.reasoning_effort = 'high';
+    }
+
+    // OpenRouter-specific parameters
+    if (openRouterModels.some(m => model.includes(m))) {
+      // OpenRouter models may need specific headers or parameters
+      // These are handled at the LiteLLM level via the config
+    }
+
+    // Gemini-specific parameters
+    if (geminiModels.some(m => model.includes(m))) {
+      // Gemini models have specific parameter requirements
+      // Function calling is handled differently in Gemini
+      // These are handled at the LiteLLM level via the config
+    }
+
+    return parameters;
+  }
+
+  /**
+   * Handle API errors from different providers with enhanced error information
+   */
+  private handleApiError(error: any, model: string): Error {
+    // Determine the API provider based on model name
+    const isOpenRouter = this.isOpenRouterModel(model);
+    const isGemini = this.isGeminiModel(model);
+    const isOpenAI = !isOpenRouter && !isGemini;
+
+    // Extract error details based on provider
+    let errorMessage = error.message || 'Unknown API error';
+    let errorCode = error.code || 'UNKNOWN_ERROR';
+    let statusCode = error.status || error.statusCode || 500;
+
+    // OpenRouter-specific error handling
+    if (isOpenRouter) {
+      if (error.response?.data?.error) {
+        const openRouterError = error.response.data.error;
+        errorMessage = `OpenRouter API Error: ${openRouterError.message || openRouterError}`;
+        errorCode = openRouterError.code || 'OPENROUTER_ERROR';
+      } else if (error.message?.includes('401')) {
+        errorMessage = 'OpenRouter API authentication failed. Check OPENROUTER_API_KEY.';
+        errorCode = 'OPENROUTER_AUTH_ERROR';
+      } else if (error.message?.includes('429')) {
+        errorMessage = 'OpenRouter API rate limit exceeded. Please try again later.';
+        errorCode = 'OPENROUTER_RATE_LIMIT';
+      }
+    }
+
+    // Gemini-specific error handling
+    if (isGemini) {
+      if (error.response?.data?.error) {
+        const geminiError = error.response.data.error;
+        errorMessage = `Gemini API Error: ${geminiError.message || geminiError}`;
+        errorCode = geminiError.code || 'GEMINI_ERROR';
+      } else if (error.message?.includes('403')) {
+        errorMessage = 'Gemini API access denied. Check GEMINI_API_KEY and permissions.';
+        errorCode = 'GEMINI_AUTH_ERROR';
+      } else if (error.message?.includes('quota')) {
+        errorMessage = 'Gemini API quota exceeded. Check your usage limits.';
+        errorCode = 'GEMINI_QUOTA_ERROR';
+      }
+    }
+
+    // OpenAI-specific error handling (default)
+    if (isOpenAI) {
+      if (error.response?.data?.error) {
+        const openaiError = error.response.data.error;
+        errorMessage = `OpenAI API Error: ${openaiError.message || openaiError}`;
+        errorCode = openaiError.code || 'OPENAI_ERROR';
+      }
+    }
+
+    // Create enhanced error with additional context
+    const enhancedError = new Error(errorMessage);
+    (enhancedError as any).code = errorCode;
+    (enhancedError as any).status = statusCode;
+    (enhancedError as any).model = model;
+    (enhancedError as any).provider = isOpenRouter ? 'OpenRouter' : isGemini ? 'Gemini' : 'OpenAI';
+    (enhancedError as any).originalError = error;
+
+    return enhancedError;
+  }
+
+  /**
+   * Check if model is from OpenRouter
+   */
+  private isOpenRouterModel(model: string): boolean {
+    const openRouterModels = [
+      'gpt-oss-120b',
+      'sonoma-dusk-alpha',
+      'sonoma-sky-alpha',
+      'glm-4.1v-9b-thinking',
+      'ernie-4.5-vl-28b-a3b',
+      'claude-3.7-sonnet:thinking',
+    ];
+    return openRouterModels.some(m => model.includes(m));
+  }
+
+  /**
+   * Check if model is from Gemini
+   */
+  private isGeminiModel(model: string): boolean {
+    const geminiModels = [
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ];
+    return geminiModels.some(m => model.includes(m));
   }
 }

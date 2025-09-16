@@ -5,13 +5,12 @@ model_list:
   # Anthropic Models
   - model_name: claude-opus-4
     litellm_params:
-      model: anthropic/claude-opus-4-20250514
+      model: anthropic/claude-opus-4-1-20250805
       api_key: os.environ/ANTHROPIC_API_KEY
-  - model_name: claude-3
+  - model_name: claude-3-7-latest
     litellm_params:
-      model: anthropic/claude-3-haiku-20240307
+      model: anthropic/claude-3-7-sonnet-latest
       api_key: os.environ/ANTHROPIC_API_KEY
-      allowed_openai_params: ["reasoning_effort"]
 
   # OpenAI Models
   - model_name: gpt-4.1
@@ -26,15 +25,44 @@ model_list:
   # OpenRouter Models
   - model_name: gpt-oss-120b
     litellm_params:
-      model: openai/gpt-oss-120b
+      model: openrouter/gpt-oss-120b
       api_key: os.environ/OPENROUTER_API_KEY
-
+      api_base: https://openrouter.ai/api/v1
+      allowed_openai_params: []
+  - model_name: Sonoma Dusk Alpha
+    litellm_params:
+      model: openrouter/sonoma-dusk-alpha
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: Sonoma Sky Alpha (Reasoning)
+    litellm_params:
+      model: openrouter/sonoma-sky-alpha
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: GLM-4-1-9b (Reasoning)
+    litellm_params:
+      model: openrouter/thudm/glm-4.1v-9b-thinking
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: Ernie-4-5-28b (Reasoning)
+    litellm_params:
+      model: openrouter/baidu/ernie-4.5-vl-28b-a3b
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: Calude-3-7-OR (Reasoning)
+    litellm_params:
+      model: openrouter/anthropic/claude-3.7-sonnet:thinking
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+      
   # Gemini Models
   - model_name: gemini-2.5-pro
     litellm_params:
       model: gemini/gemini-2.5-pro
       api_key: os.environ/GEMINI_API_KEY
+      api_base: https://generativelanguage.googleapis.com/v1beta
   - model_name: gemini-2.5-flash
     litellm_params:
       model: gemini/gemini-2.5-flash
       api_key: os.environ/GEMINI_API_KEY
+      api_base: https://generativelanguage.googleapis.com/v1beta

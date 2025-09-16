@@ -51,6 +51,13 @@ spec:
               name: {{ include "bytebot-llm-proxy.fullname" . }}-secrets
               key: gemini-api-key
         {{- end }}
+        {{- if .Values.env.OPENROUTER_API_KEY }}
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "bytebot-llm-proxy.fullname" . }}-secrets
+              key: openrouter-api-key
+        {{- end }}
         volumeMounts:
         - name: config
           mountPath: /app/config.yaml
