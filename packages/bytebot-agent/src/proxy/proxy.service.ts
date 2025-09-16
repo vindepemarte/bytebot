@@ -335,47 +335,17 @@ export class ProxyService implements BytebotAgentService {
   private getModelSpecificParameters(model: string): Record<string, any> {
     const parameters: Record<string, any> = {};
 
-    // Models that don't support reasoning_effort parameter
-    const modelsWithoutReasoningEffort = [
-      'gpt-oss-120b',
-      'sonoma-dusk-alpha',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ];
+    // Check if this is an OpenRouter or Gemini model
+    const isOpenRouter = this.isOpenRouterModel(model);
+    const isGemini = this.isGeminiModel(model);
 
-    // OpenRouter models that need specific handling
-    const openRouterModels = [
-      'gpt-oss-120b',
-      'sonoma-dusk-alpha',
-      'sonoma-sky-alpha',
-      'glm-4.1v-9b-thinking',
-      'ernie-4.5-vl-28b-a3b',
-      'claude-3.7-sonnet:thinking',
-    ];
-
-    // Gemini models that need specific handling
-    const geminiModels = [
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ];
-
-    // Add reasoning_effort for models that support it
-    if (!modelsWithoutReasoningEffort.includes(model)) {
+    // Only add reasoning_effort for OpenAI models (not OpenRouter or Gemini)
+    if (!isOpenRouter && !isGemini) {
       parameters.reasoning_effort = 'high';
     }
 
-    // OpenRouter-specific parameters
-    if (openRouterModels.some(m => model.includes(m))) {
-      // OpenRouter models may need specific headers or parameters
-      // These are handled at the LiteLLM level via the config
-    }
-
-    // Gemini-specific parameters
-    if (geminiModels.some(m => model.includes(m))) {
-      // Gemini models have specific parameter requirements
-      // Function calling is handled differently in Gemini
-      // These are handled at the LiteLLM level via the config
-    }
+    // OpenRouter and Gemini specific parameters are handled at the LiteLLM level
+    // via the configuration file, so no additional parameters needed here
 
     return parameters;
   }
