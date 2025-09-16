@@ -285,12 +285,33 @@ export class ProxyService implements BytebotAgentService {
       } as TextContentBlock);
     }
 
+    // Handle reasoning content from different providers
     if (message['reasoning_content']) {
       contentBlocks.push({
         type: MessageContentType.Thinking,
         thinking: message['reasoning_content'],
         signature: message['reasoning_content'],
       } as ThinkingContentBlock);
+    } else if (message['reasoning']) {
+      // OpenRouter models return reasoning in 'reasoning' field
+      contentBlocks.push({
+        type: MessageContentType.Thinking,
+        thinking: message['reasoning'],
+        signature: message['reasoning'],
+      } as ThinkingContentBlock);
+    }
+
+    // Handle reasoning_details array from OpenRouter models
+    if (message['reasoning_details'] && Array.isArray(message['reasoning_details'])) {
+      for (const detail of message['reasoning_details']) {
+        if (detail.type === 'reasoning.text' && detail.text) {
+          contentBlocks.push({
+            type: MessageContentType.Thinking,
+            thinking: detail.text,
+            signature: detail.signature || detail.text,
+          } as ThinkingContentBlock);
+        }
+      }
     }
 
     // Handle tool calls
@@ -323,6 +344,11 @@ export class ProxyService implements BytebotAgentService {
         type: MessageContentType.Text,
         text: `Refusal: ${message.refusal}`,
       } as TextContentBlock);
+    }
+
+    // Log if no content blocks were created for debugging
+    if (contentBlocks.length === 0) {
+      this.logger.warn('No content blocks created from message:', JSON.stringify(message, null, 2));
     }
 
     return contentBlocks;
