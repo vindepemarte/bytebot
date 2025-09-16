@@ -1,3 +1,6 @@
+# anthropic does not support parameters: ['reasoning_effort'], for model=claude-3-5-haiku-20241022
+drop_params: true
+
 model_list:
   # Anthropic Models
   - model_name: claude-opus-4
