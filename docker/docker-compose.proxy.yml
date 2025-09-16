@@ -66,6 +66,10 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     networks:
       - bytebot-network
+    volumes:
+      # This path now correctly points to your config file
+      - ../packages/bytebot-llm-proxy/litellm-config.yaml:/app/config.yaml 
+    command: ["--config", "/app/config.yaml"] # This tells LiteLLM to use the mounted config
 
   bytebot-ui:
     build:
