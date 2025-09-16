@@ -67,9 +67,12 @@ services:
     networks:
       - bytebot-network
     volumes:
-      # This path now correctly points to your config file
-      - ../packages/bytebot-llm-proxy/litellm-config.yaml:/app/config.yaml 
-    command: ["--config", "/app/config.yaml"] # This tells LiteLLM to use the mounted config
+      # Mount to a safe location at the ROOT of the container's filesystem
+      - ../packages/bytebot-llm-proxy/litellm-config.yaml:/config.yaml 
+    command: 
+      # Tell LiteLLM to look for the config at the new root location
+      - "--config"
+      - "/config.yaml"
 
   bytebot-ui:
     build:
